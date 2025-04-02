@@ -146,7 +146,7 @@
                         messagesList.innerHTML = '';
                         updateLastRefreshed();
                         
-                        checkInboxInterval = setInterval(checkInbox, 5000);
+                        checkInboxInterval = setInterval(checkInbox, 100);
                         checkInbox();
                     })
                     .catch(error => {
@@ -180,7 +180,7 @@
                 
                 axios.get(`/api/check-inbox?email=${encodeURIComponent(currentEmail)}`)
                     .then(response => {
-                        const messages = response.data;
+                        const messages = extractMessagesFromResponse(response.data);
                         updateLastRefreshed();
                         
                         if (messages.length === 0) {
@@ -190,7 +190,7 @@
                         
                         emptyInbox.classList.add('hidden');
                         
-                        if (messages.length > lastMessageCount) {
+                        if (messages.length !== lastMessageCount) {
                             renderMessages(messages);
                             lastMessageCount = messages.length;
                         }
@@ -201,6 +201,16 @@
                     .finally(() => {
                         refreshIndicator.classList.add('hidden');
                     });
+            }
+            
+            function extractMessagesFromResponse(data) {
+                const messages = [];
+                for (const key in data) {
+                    if (key !== "operator" && typeof data[key] === 'object' && data[key].id) {
+                        messages.push(data[key]);
+                    }
+                }
+                return messages;
             }
             
             function renderMessages(messages) {
@@ -237,7 +247,7 @@
                 document.getElementById('modalSubject').textContent = message.subject || 'No Subject';
                 document.getElementById('modalFrom').textContent = message.from;
                 document.getElementById('modalDate').textContent = new Date(message.created_at).toLocaleString();
-                document.getElementById('modalContent').innerHTML = message.body_html;
+                document.getElementById('modalContent').innerHTML = message.body_html || message.body_text;
                 
                 const attachmentsSection = document.getElementById('modalAttachments');
                 const attachmentsList = document.getElementById('attachmentsList');
