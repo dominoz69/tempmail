@@ -13,12 +13,12 @@
         
         <div class="max-w-2xl mx-auto">
             <div class="bg-gray-800 rounded-lg p-6 mb-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold">Your Temporary Email</h2>
-                    <button id="generateBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md transition">Generate New</button>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                    <h2 class="text-xl font-semibold mb-2 sm:mb-0">Your Temporary Email</h2>
+                    <button id="generateBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md transition w-full sm:w-auto">Generate New</button>
                 </div>
                 
-                <div class="flex items-center space-x-2">
+                <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     <input id="emailDisplay" type="text" readonly class="bg-gray-700 w-full p-3 rounded-md" placeholder="Click Generate to create email">
                     <button id="copyBtn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-md transition" title="Copy to clipboard">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -39,16 +39,16 @@
             </div>
             
             <div id="inboxContainer" class="bg-gray-800 rounded-lg p-6 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold">Inbox</h2>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                    <h2 class="text-xl font-semibold mb-2 sm:mb-0">Inbox</h2>
                     <div class="flex items-center">
-                        <div id="refreshIndicator" class="hidden mr-2">
+                        <span id="lastRefreshed" class="text-sm text-gray-400"></span>
+                        <div id="refreshIndicator" class="ml-2">
                             <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         </div>
-                        <span id="lastRefreshed" class="text-sm text-gray-400 mr-2"></span>
                     </div>
                 </div>
                 
@@ -57,17 +57,17 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                     <p class="text-lg">No messages yet</p>
-                    <p class="text-sm">Messages will appear here automatically</p>
+                    <p class="text-sm">Checking for new messages...</p>
                 </div>
                 
-                <div id="messagesList" class="space-y-4"></div>
+                <div id="messagesList" class="space-y-3"></div>
             </div>
         </div>
     </div>
     
-    <div id="messageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
-        <div class="bg-gray-800 rounded-lg max-w-3xl w-full max-h-screen overflow-y-auto mx-4">
-            <div class="p-6 border-b border-gray-700">
+    <div id="messageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-4 sm:p-6 border-b border-gray-700">
                 <div class="flex justify-between items-center">
                     <h3 id="modalSubject" class="text-xl font-bold truncate"></h3>
                     <button id="closeModal" class="text-gray-400 hover:text-white">
@@ -79,7 +79,7 @@
                 <div class="flex flex-col mt-2 text-sm text-gray-400">
                     <div class="flex items-center">
                         <span class="font-medium mr-2">From:</span>
-                        <span id="modalFrom"></span>
+                        <span id="modalFrom" class="break-all"></span>
                     </div>
                     <div class="flex items-center">
                         <span class="font-medium mr-2">Date:</span>
@@ -87,12 +87,12 @@
                     </div>
                 </div>
             </div>
-            <div class="p-6">
-                <div id="modalContent" class="prose prose-invert max-w-none"></div>
+            <div class="p-4 sm:p-6">
+                <div id="modalContent" class="prose prose-invert max-w-none overflow-x-auto"></div>
                 
                 <div id="modalAttachments" class="mt-6 hidden">
                     <h4 class="font-medium mb-2 text-gray-300">Attachments</h4>
-                    <div id="attachmentsList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                    <div id="attachmentsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
                 </div>
             </div>
         </div>
@@ -147,7 +147,7 @@
                         messagesList.innerHTML = '';
                         updateLastRefreshed();
                         
-                        checkInboxInterval = setInterval(checkInbox, 100);
+                        startContinuousInboxChecking();
                     })
                     .catch(error => {
                         status.textContent = 'Error generating email';
@@ -174,18 +174,26 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
                             `;
-                        }, 3000);
+                        }, 2000);
                     })
                     .catch(err => {
                         console.error('Failed to copy:', err);
                     });
             }
             
+            function startContinuousInboxChecking() {
+                if (checkInboxInterval) {
+                    clearInterval(checkInboxInterval);
+                }
+                
+                checkInbox();
+                checkInboxInterval = setInterval(checkInbox, 3000);
+            }
+            
             function checkInbox() {
                 if (!currentEmail || isCheckingInbox) return;
                 
                 isCheckingInbox = true;
-                refreshIndicator.classList.remove('hidden');
                 
                 axios.get(`/api/check-inbox?email=${encodeURIComponent(currentEmail)}`)
                     .then(response => {
@@ -201,6 +209,15 @@
                             if (messages.length !== lastMessageCount) {
                                 renderMessages(messages);
                                 lastMessageCount = messages.length;
+                                
+                                if (lastMessageCount > 0 && messagesList.children.length > 0) {
+                                    const newMessageElement = messagesList.children[0];
+                                    newMessageElement.classList.add('bg-blue-900');
+                                    setTimeout(() => {
+                                        newMessageElement.classList.remove('bg-blue-900');
+                                        newMessageElement.classList.add('bg-gray-700');
+                                    }, 1000);
+                                }
                             }
                         }
                     })
@@ -208,7 +225,6 @@
                         console.error('Error checking inbox:', error);
                     })
                     .finally(() => {
-                        refreshIndicator.classList.add('hidden');
                         isCheckingInbox = false;
                     });
             }
@@ -238,9 +254,9 @@
                                 <h3 class="font-medium truncate">${message.subject || 'No Subject'}</h3>
                                 <p class="text-gray-400 text-sm truncate">${message.from}</p>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right flex flex-col items-end">
                                 <span class="text-xs text-gray-400">${formattedDate}</span>
-                                ${hasAttachments ? '<span class="ml-2 text-blue-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg></span>' : ''}
+                                ${hasAttachments ? '<span class="text-blue-400 mt-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg></span>' : ''}
                             </div>
                         </div>
                     `;
@@ -258,10 +274,9 @@
                 document.getElementById('modalFrom').textContent = message.from;
                 document.getElementById('modalDate').textContent = new Date(message.created_at).toLocaleString();
                 
-                // Clean up HTML content to prevent XSS and ensure proper rendering
                 let cleanHtml = message.body_html || message.body_text;
                 if (!cleanHtml.startsWith('<')) {
-                    cleanHtml = `<pre>${cleanHtml}</pre>`;
+                    cleanHtml = `<pre class="whitespace-pre-wrap break-words">${cleanHtml}</pre>`;
                 }
                 document.getElementById('modalContent').innerHTML = cleanHtml;
                 
@@ -312,8 +327,14 @@
             
             function updateLastRefreshed() {
                 const now = new Date();
-                lastRefreshed.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+                lastRefreshed.textContent = `Updated: ${now.toLocaleTimeString()}`;
             }
+            
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible' && currentEmail) {
+                    checkInbox();
+                }
+            });
         });
     </script>
 </body>
