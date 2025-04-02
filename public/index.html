@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TempMail Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8">TempMail Generator</h1>
+        
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold">Your Temporary Email</h2>
+                    <button id="generateBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md transition">Generate New</button>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <input id="emailDisplay" type="text" readonly class="bg-gray-700 w-full p-3 rounded-md" placeholder="Click Generate to create email">
+                    <button id="copyBtn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-md transition" title="Copy to clipboard">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mt-4 flex items-center">
+                    <div id="statusIndicator" class="hidden mr-2">
+                        <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <p id="status" class="text-sm text-gray-400">No email generated yet</p>
+                </div>
+            </div>
+            
+            <div id="inboxContainer" class="bg-gray-800 rounded-lg p-6 hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold">Inbox</h2>
+                    <div class="flex items-center">
+                        <div id="refreshIndicator" class="hidden mr-2">
+                            <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <span id="lastRefreshed" class="text-sm text-gray-400 mr-2"></span>
+                    </div>
+                </div>
+                
+                <div id="emptyInbox" class="text-center py-8 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <p class="text-lg">No messages yet</p>
+                    <p class="text-sm">Messages will appear here automatically</p>
+                </div>
+                
+                <div id="messagesList" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="messageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 rounded-lg max-w-3xl w-full max-h-screen overflow-y-auto mx-4">
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 id="modalSubject" class="text-xl font-bold truncate"></h3>
+                    <button id="closeModal" class="text-gray-400 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex flex-col mt-2 text-sm text-gray-400">
+                    <div class="flex items-center">
+                        <span class="font-medium mr-2">From:</span>
+                        <span id="modalFrom"></span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="font-medium mr-2">Date:</span>
+                        <span id="modalDate"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="modalContent" class="prose prose-invert max-w-none"></div>
+                
+                <div id="modalAttachments" class="mt-6 hidden">
+                    <h4 class="font-medium mb-2 text-gray-300">Attachments</h4>
+                    <div id="attachmentsList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentEmail = '';
+        let checkInboxInterval;
+        let lastMessageCount = 0;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const generateBtn = document.getElementById('generateBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const emailDisplay = document.getElementById('emailDisplay');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const status = document.getElementById('status');
+            const inboxContainer = document.getElementById('inboxContainer');
+            const refreshIndicator = document.getElementById('refreshIndicator');
+            const lastRefreshed = document.getElementById('lastRefreshed');
+            const emptyInbox = document.getElementById('emptyInbox');
+            const messagesList = document.getElementById('messagesList');
+            const messageModal = document.getElementById('messageModal');
+            const closeModal = document.getElementById('closeModal');
+            
+            generateBtn.addEventListener('click', generateEmail);
+            copyBtn.addEventListener('click', copyEmail);
+            closeModal.addEventListener('click', () => {
+                messageModal.classList.add('hidden');
+            });
+            
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !messageModal.classList.contains('hidden')) {
+                    messageModal.classList.add('hidden');
+                }
+            });
+            
+            function generateEmail() {
+                statusIndicator.classList.remove('hidden');
+                status.textContent = 'Generating email...';
+                
+                clearInterval(checkInboxInterval);
+                lastMessageCount = 0;
+                
+                axios.get('/api/generate-email')
+                    .then(response => {
+                        currentEmail = response.data.email;
+                        emailDisplay.value = currentEmail;
+                        status.textContent = 'Email generated successfully';
+                        inboxContainer.classList.remove('hidden');
+                        emptyInbox.classList.remove('hidden');
+                        messagesList.innerHTML = '';
+                        updateLastRefreshed();
+                        
+                        checkInboxInterval = setInterval(checkInbox, 5000);
+                        checkInbox();
+                    })
+                    .catch(error => {
+                        status.textContent = 'Error generating email';
+                        console.error('Error generating email:', error);
+                    })
+                    .finally(() => {
+                        statusIndicator.classList.add('hidden');
+                    });
+            }
+            
+            function copyEmail() {
+                if (!currentEmail) return;
+                
+                navigator.clipboard.writeText(currentEmail)
+                    .then(() => {
+                        copyBtn.classList.add('bg-green-600');
+                        setTimeout(() => {
+                            copyBtn.classList.remove('bg-green-600');
+                        }, 1000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy:', err);
+                    });
+            }
+            
+            function checkInbox() {
+                if (!currentEmail) return;
+                
+                refreshIndicator.classList.remove('hidden');
+                
+                axios.get(`/api/check-inbox?email=${encodeURIComponent(currentEmail)}`)
+                    .then(response => {
+                        const messages = response.data;
+                        updateLastRefreshed();
+                        
+                        if (messages.length === 0) {
+                            emptyInbox.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        emptyInbox.classList.add('hidden');
+                        
+                        if (messages.length > lastMessageCount) {
+                            renderMessages(messages);
+                            lastMessageCount = messages.length;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking inbox:', error);
+                    })
+                    .finally(() => {
+                        refreshIndicator.classList.add('hidden');
+                    });
+            }
+            
+            function renderMessages(messages) {
+                messagesList.innerHTML = '';
+                
+                messages.forEach(message => {
+                    const formattedDate = new Date(message.created_at).toLocaleString();
+                    const hasAttachments = message.attachments && message.attachments.length > 0;
+                    
+                    const messageElement = document.createElement('div');
+                    messageElement.className = 'bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition';
+                    messageElement.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-medium truncate">${message.subject || 'No Subject'}</h3>
+                                <p class="text-gray-400 text-sm truncate">${message.from}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-gray-400">${formattedDate}</span>
+                                ${hasAttachments ? '<span class="ml-2 text-blue-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg></span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    messageElement.addEventListener('click', () => {
+                        openMessageModal(message);
+                    });
+                    
+                    messagesList.prepend(messageElement);
+                });
+            }
+            
+            function openMessageModal(message) {
+                document.getElementById('modalSubject').textContent = message.subject || 'No Subject';
+                document.getElementById('modalFrom').textContent = message.from;
+                document.getElementById('modalDate').textContent = new Date(message.created_at).toLocaleString();
+                document.getElementById('modalContent').innerHTML = message.body_html;
+                
+                const attachmentsSection = document.getElementById('modalAttachments');
+                const attachmentsList = document.getElementById('attachmentsList');
+                attachmentsList.innerHTML = '';
+                
+                if (message.attachments && message.attachments.length > 0) {
+                    attachmentsSection.classList.remove('hidden');
+                    
+                    message.attachments.forEach(attachment => {
+                        const attachmentElement = document.createElement('div');
+                        attachmentElement.className = 'bg-gray-700 rounded-lg p-3 flex flex-col items-center text-center';
+                        
+                        let attachmentContent = '';
+                        const fileExt = attachment.filename.split('.').pop().toLowerCase();
+                        
+                        if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(fileExt)) {
+                            attachmentContent = `<img src="data:${attachment.contentType};base64,${attachment.content}" alt="${attachment.filename}" class="max-h-32 object-contain mb-2">`;
+                        } else if (['mp4', 'webm', 'ogg'].includes(fileExt)) {
+                            attachmentContent = `<video src="data:${attachment.contentType};base64,${attachment.content}" controls class="max-h-32 w-full mb-2"></video>`;
+                        } else if (['mp3', 'wav'].includes(fileExt)) {
+                            attachmentContent = `<audio src="data:${attachment.contentType};base64,${attachment.content}" controls class="w-full mb-2"></audio>`;
+                        } else {
+                            attachmentContent = `
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            `;
+                        }
+                        
+                        attachmentElement.innerHTML = `
+                            ${attachmentContent}
+                            <p class="text-sm truncate w-full">${attachment.filename}</p>
+                            <a href="data:${attachment.contentType};base64,${attachment.content}" download="${attachment.filename}" class="text-blue-400 text-xs mt-1 hover:text-blue-300">Download</a>
+                        `;
+                        
+                        attachmentsList.appendChild(attachmentElement);
+                    });
+                } else {
+                    attachmentsSection.classList.add('hidden');
+                }
+                
+                messageModal.classList.remove('hidden');
+            }
+            
+            function updateLastRefreshed() {
+                const now = new Date();
+                lastRefreshed.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+            }
+        });
+    </script>
+</body>
+</html>
